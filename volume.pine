@@ -1,0 +1,30 @@
+//This indicator will show volume inversely. So if you are looking at an Altcoin, it will show volume in BTC, if you are looking at for example BTC/USD it will show volume in USD and so on. Works with all altcoins and fiat pairs.
+//I find this most useful when shopping for alts to quickly get an idea of their liquidity.
+
+//title the indicator and dont use decimals. (Otherwise when viewing fiat volume you get unreadably large numbers) you can change this in the settings dialog tho if you want.
+//@version=4
+study("Vol in Base asset 20MA", "", true, format.volume, 0, scale.none)
+
+//Make the moving average user configurable
+HIM1 = "1. Historical High"
+HIM2 = "2. Highest in last..."
+showMA = input(true)
+scaleFactor = 100 / input(30, "% of vertical space used", step = 10, maxval = 100)
+hiMethod = input(HIM2, "High point method", options = [HIM1, HIM2])
+hiMethod2Len = input(400, "  2. Length", minval = 2, step = 100)
+
+//Get volume for current bar and multiply with vwap
+vInverse = volume * vwap
+
+colorofbar = open < close ? color.green : color.red
+//Plot fiat volume.
+plot(vInverse, color = colorofbar, title="VolumeBTC", style=plot.style_columns, transp=0) //Originally: transp=65
+
+//Plot 20 candle moving average (changable in settings)
+// plot(showMA ? sma(vInverse,20) : na, color = color.white, title="Volume MA", style=plot.style_area, transp=65)
+
+//Plot high line to scale down the columns.
+var histHi = 0.
+histHi := max(histHi, nz(vInverse, histHi))
+limit = hiMethod == HIM1 ? histHi : highest(vInverse, hiMethod2Len)
+plot(limit * scaleFactor, "Historical High", #00000000)
