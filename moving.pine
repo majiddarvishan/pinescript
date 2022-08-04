@@ -1,0 +1,18 @@
+//@version=3
+study(title="Moving Averages 5 & 20 & 200", shorttitle="MA5&20&200", overlay=true)
+
+mv5_len = input(5, minval=1, title="Length")
+mv5_src = input(close, title="Source")
+mv5_out = sma(mv5_src, mv5_len)
+
+mv20_len = input(20, minval=1, title="Length")
+mv20_src = input(close, title="Source")
+mv20_out = sma(mv20_src, mv20_len)
+
+mv200_len = input(200, minval=1, title="Length")
+mv200_src = input(close, title="Source")
+mv200_out = sma(mv200_src, mv200_len)
+
+plot(mv200_out, color=#0b6ce5, title="MA200")
+plot(mv5_out, color=#00d8ff, title="MA5")
+plot(mv20_out, color=#00d5ff, title="MA20")
