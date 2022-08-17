@@ -1,0 +1,176 @@
+//@version=4
+study("Supertrend Screener", shorttitle="Supertrend Screener", overlay=true)
+
+t1 = input(title="Ticker1", title=input.symbol, defval="BINANCE:BTCUSDT" )
+t2 = input(title="Ticker2", title=input.symbol, defval="BINANCE:ADAUSDT" )
+t3 = input(title="Ticker3", title=input.symbol, defval="BINANCE:ETHUSDT" )
+t4 = input(title="Ticker4", title=input.symbol, defval="BINANCE:XRPUSDT" )
+t5 = input(title="Ticker5", title=input.symbol, defval="BINANCE:LTCUSDT" )
+t6 = input(title="Ticker6", title=input.symbol, defval="BINANCE:TRXUSDT" )
+t7 = input(title="Ticker7", title=input.symbol, defval="BINANCE:SHIBUSDT" )
+t8 = input(title="Ticker8", title=input.symbol, defval="BINANCE:SOLUSDT" )
+t9 = input(title="Ticker9", title=input.symbol, defval="BINANCE:MATICUSDT")
+t0 = input(title="Ticker0", title=input.symbol, defval="BINANCE:LINKUSDT" )
+
+Factor=input(3,title="[SUPERTREND] Factor", minval=1,maxval = 100, type=input.float)
+Pd=input(22, title="[SUPERTREND] PD", minval=1,maxval = 100)
+highlighting = input(title="Show HIghlights", type=input.bool, defval=true)
+showscr = input(true, title="Show Screener Label")
+posX_scr = input(20, title="Pos. Label x-axis")
+posY_scr = input(1, title="Pos. Size Label y-axis")
+
+colinput = input(title="Label Color", defval="White", options=["White", "Black", "Red", "Green", "Yellow", "Blue"])
+
+col = color.gray
+if colinput=="White"
+    col:=color.white
+if colinput=="Black"
+    col:=color.black
+if colinput=="Red"
+    col:=color.red
+if colinput=="Green"
+    col:=color.green
+if colinput=="Yellow"
+    col:=color.yellow
+if colinput=="Blue"
+    col:=color.blue
+    
+Supertrend(Factor, Pd) =>
+    Up=hl2-(Factor*atr(Pd))
+    Dn=hl2+(Factor*atr(Pd))
+    
+    TrendUp = 0.0
+    TrendUp := close[1]>TrendUp[1] ? max(Up,TrendUp[1]) : Up
+    TrendDown = 0.0
+    TrendDown := close[1]<TrendDown[1]? min(Dn,TrendDown[1]) : Dn
+    Trend = 0.0
+    Trend := close > TrendDown[1] ? 1: close< TrendUp[1]? -1: nz(Trend[1],1)
+    Tsl = Trend==1? TrendUp: TrendDown
+    
+    S_Buy = Trend == 1 ? 1 : 0
+    S_Sell = Trend != 1 ? 1 : 0
+    
+    [Trend, Tsl]
+
+[Trend, Tsl] = Supertrend(Factor, Pd)
+TrendReversal = Trend != Trend[1]
+
+
+
+[t01, s01] = security(t1, timeframe.period, Supertrend(Factor, Pd))
+[t02, s02] = security(t2, timeframe.period, Supertrend(Factor, Pd))
+[t03, s03] = security(t3, timeframe.period, Supertrend(Factor, Pd))
+[t04, s04] = security(t4, timeframe.period, Supertrend(Factor, Pd))
+[t05, s05] = security(t5, timeframe.period, Supertrend(Factor, Pd))
+[t06, s06] = security(t6, timeframe.period, Supertrend(Factor, Pd))
+[t07, s07] = security(t7, timeframe.period, Supertrend(Factor, Pd))
+[t08, s08] = security(t8, timeframe.period, Supertrend(Factor, Pd))
+[t09, s09] = security(t9, timeframe.period, Supertrend(Factor, Pd))
+[t00, s00] = security(t0, timeframe.period, Supertrend(Factor, Pd))
+
+tr01 = t01 != t01[1], up01 = t01 == 1, dn01 = t01 == -1
+tr02 = t02 != t02[1], up02 = t02 == 1, dn02 = t02 == -1
+tr03 = t03 != t03[1], up03 = t03 == 1, dn03 = t03 == -1
+tr04 = t04 != t04[1], up04 = t04 == 1, dn04 = t04 == -1
+tr05 = t05 != t05[1], up05 = t05 == 1, dn05 = t05 == -1
+tr06 = t06 != t06[1], up06 = t06 == 1, dn06 = t06 == -1
+tr07 = t07 != t07[1], up07 = t07 == 1, dn07 = t07 == -1
+tr08 = t08 != t08[1], up08 = t08 == 1, dn08 = t08 == -1
+tr09 = t09 != t09[1], up09 = t09 == 1, dn09 = t09 == -1
+tr00 = t00 != t00[1], up00 = t00 == 1, dn00 = t00 == -1
+
+pot_label = 'احتمال تغییر روند \n'
+pot_label := tr01    ? pot_label + t1 + '\n'  : pot_label
+pot_label := tr02    ? pot_label + t2 + '\n'  : pot_label
+pot_label := tr03    ? pot_label + t3 + '\n'  : pot_label
+pot_label := tr04    ? pot_label + t4 + '\n'  : pot_label
+pot_label := tr05    ? pot_label + t5 + '\n'  : pot_label
+pot_label := tr06    ? pot_label + t6 + '\n'  : pot_label
+pot_label := tr07    ? pot_label + t7 + '\n'  : pot_label
+pot_label := tr08    ? pot_label + t8 + '\n'  : pot_label
+pot_label := tr09    ? pot_label + t9 + '\n'  : pot_label
+pot_label := tr00    ? pot_label + t0 + '\n'  : pot_label
+
+scr_label = 'تغییر روند تایید شده \n'
+scr_label := tr01[1] ? scr_label + t1 + '\n'  : scr_label
+scr_label := tr02[1] ? scr_label + t2 + '\n'  : scr_label
+scr_label := tr03[1] ? scr_label + t3 + '\n'  : scr_label
+scr_label := tr04[1] ? scr_label + t4 + '\n'  : scr_label
+scr_label := tr05[1] ? scr_label + t5 + '\n'  : scr_label
+scr_label := tr06[1] ? scr_label + t6 + '\n'  : scr_label
+scr_label := tr07[1] ? scr_label + t7 + '\n'  : scr_label
+scr_label := tr08[1] ? scr_label + t8 + '\n'  : scr_label
+scr_label := tr09[1] ? scr_label + t9 + '\n'  : scr_label
+scr_label := tr00[1] ? scr_label + t0 + '\n'  : scr_label
+
+up_label = 'روند صعودی \n'
+up_label := up01[1] ? up_label + t1 + '\n'  : up_label
+up_label := up02[1] ? up_label + t2 + '\n'  : up_label
+up_label := up03[1] ? up_label + t3 + '\n'  : up_label
+up_label := up04[1] ? up_label + t4 + '\n'  : up_label
+up_label := up05[1] ? up_label + t5 + '\n'  : up_label
+up_label := up06[1] ? up_label + t6 + '\n'  : up_label
+up_label := up07[1] ? up_label + t7 + '\n'  : up_label
+up_label := up08[1] ? up_label + t8 + '\n'  : up_label
+up_label := up09[1] ? up_label + t9 + '\n'  : up_label
+up_label := up00[1] ? up_label + t0 + '\n'  : up_label
+
+dn_label = 'روند نزولی \n'
+dn_label := dn01[1] ? dn_label + t1 + '\n'  : dn_label
+dn_label := dn02[1] ? dn_label + t2 + '\n'  : dn_label
+dn_label := dn03[1] ? dn_label + t3 + '\n'  : dn_label
+dn_label := dn04[1] ? dn_label + t4 + '\n'  : dn_label
+dn_label := dn05[1] ? dn_label + t5 + '\n'  : dn_label
+dn_label := dn06[1] ? dn_label + t6 + '\n'  : dn_label
+dn_label := dn07[1] ? dn_label + t7 + '\n'  : dn_label
+dn_label := dn08[1] ? dn_label + t8 + '\n'  : dn_label
+dn_label := dn09[1] ? dn_label + t9 + '\n'  : dn_label
+dn_label := dn00[1] ? dn_label + t0 + '\n'  : dn_label
+
+
+f_colorscr (_valscr ) => 
+     _valscr  ? #00000000 : na
+f_printscr (_txtscr ) => 
+     var _lblscr  = label(na), 
+     label.delete(_lblscr ), 
+     _lblscr  := label.new(
+     time + (time-time[1])*posX_scr , 
+     ohlc4[posY_scr], 
+     _txtscr ,
+     xloc.bar_time, 
+     yloc.price, 
+     f_colorscr (  showscr ),
+     textcolor =  showscr ? col : na, 
+     size = size.large, 
+     style=label.style_label_center
+     )
+f_printscr ( scr_label + '\n' + pot_label +'\n' + up_label + '\n' + dn_label)
+
+st_security(_symbol, _res, _src) => security(_symbol, _res, _src[barstate.isrealtime ? 1 : 0])
+ST_Trend = st_security(syminfo.tickerid, timeframe.period, Trend)
+ST_Tsl = st_security(syminfo.tickerid, timeframe.period, Tsl)
+
+
+upPlot = plot(title='Uptrend', series=ST_Trend==1? ST_Tsl : na, style=plot.style_linebr, color=color.green , linewidth=1, transp=0)
+dnPlot = plot(title='Downtrend', series=ST_Trend==1? na : ST_Tsl, style=plot.style_linebr, color=color.red , linewidth=1, transp=0)
+hPlot = plot(ohlc4, title="", style=plot.style_circles, linewidth=0, editable = false)
+longFill = highlighting ? (ST_Trend == 1 ? color.green : na) : na
+shortFill = highlighting ? (ST_Trend == -1 ? color.red : na) : na
+fill(hPlot, upPlot, color=longFill)
+fill(hPlot, dnPlot, color=shortFill)
+
+//Plot Buy Signal
+buySignal = ST_Trend == 1 and ST_Trend[1] == -1
+plotshape(buySignal ? ST_Tsl : na, title="UpTrend Begins", location=location.absolute, style=shape.circle, size=size.tiny, color=color.green, transp=0)
+plotshape(buySignal ? ST_Tsl : na, title="BUY", text="BUY", location=location.absolute, style=shape.labelup, size=size.tiny, color=color.green, textcolor=color.white, transp=0)
+
+//Plot Sell Signal
+sellSignal = ST_Trend == -1 and ST_Trend[1] == 1 
+plotshape(sellSignal ? ST_Tsl : na, title="DownTrend Begins", location=location.absolute, style=shape.circle, size=size.tiny, color=color.red, transp=0)
+plotshape(sellSignal ? ST_Tsl : na, title="SELL", text="SELL", location=location.absolute, style=shape.labeldown, size=size.tiny, color=color.red, textcolor=color.white, transp=0)
+
+//Alert Condition
+alertcondition(buySignal, title='Bullish Trend', message='Bullish Trend')
+alertcondition(sellSignal, title='Bearish Trend', message='Bearish Trend')
+changeCond = Trend != Trend[1]
+alertcondition(changeCond, title="Trend Direction Change", message="Trend has changed direction!")
