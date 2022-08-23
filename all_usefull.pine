@@ -2,48 +2,21 @@
 
 indicator(title='all_usefull', shorttitle='usefull', overlay=true)
 
+group0 = "Settings"
+showMas = input.bool(true, title="Show Moving Averages", inline = "Show Moving Averages", group = group0)
+showChanel = input.bool(true, title="Show Chanel", inline = "Show Chanel", group = group0)
+
 //Moving Averages
-mv5_len = input.int(5, minval=1, title='Length')
-mv5_src = input(close, title='Source')
-mv5_out = ta.sma(mv5_src, mv5_len)
+mv5_out = ta.sma(close, 5)
+mv20_out = ta.sma(close, 20)
+mv200_out = ta.sma(close, 200)
 
-mv20_len = input.int(20, minval=1, title='Length')
-mv20_src = input(close, title='Source')
-mv20_out = ta.sma(mv20_src, mv20_len)
-
-mv200_len = input.int(200, minval=1, title='Length')
-mv200_src = input(close, title='Source')
-mv200_out = ta.sma(mv200_src, mv200_len)
-
-plot(mv5_out, color=color.white, title='MA5')
-plot(mv20_out, color=color.new(#00d5ff, 0), title='MA20')
-plot(mv200_out, color=color.new(#fddd36, 0), title='MA200')
-
+plot(showMas? mv5_out:  na, title="MA5", linewidth=2, color=color.white)
+plot(showMas? mv20_out:  na, title="MA20", linewidth=2, color=color.new(#00d5ff, 0))
+plot(showMas? mv200_out:  na, title="MA200", linewidth=2, color=color.new(#fddd36, 0))
+// plot(mv200_out, title="MA200", linewidth=2, color=color.new(#fddd36, 0), transp = showMas ? 0 : 100)
 
 //Linear Regression Channel
-lengthInput = input.int(100, title="Length", minval = 1, maxval = 5000)
-sourceInput = input.source(close, title="Source")
-
-group1 = "Channel Settings"
-useUpperDevInput = input.bool(true, title="Upper Deviation", inline = "Upper Deviation", group = group1)
-upperMultInput = input.float(2.0, title="", inline = "Upper Deviation", group = group1)
-useLowerDevInput = input.bool(true, title="Lower Deviation", inline = "Lower Deviation", group = group1)
-lowerMultInput = input.float(2.0, title="", inline = "Lower Deviation", group = group1)
-
-group2 = "Display Settings"
-showPearsonInput = input.bool(true, "Show Pearson's R", group = group2)
-extendLeftInput = input.bool(false, "Extend Lines Left", group = group2)
-extendRightInput = input.bool(true, "Extend Lines Right", group = group2)
-extendStyle = switch
-    extendLeftInput and extendRightInput => extend.both
-    extendLeftInput => extend.left
-    extendRightInput => extend.right
-    => extend.none
-
-group3 = "Color Settings"
-colorUpper = input.color(color.new(color.blue, 85), "", inline = group3, group = group3)
-colorLower = input.color(color.new(color.red, 85), "", inline = group3, group = group3)
-
 calcSlope(source, length) =>
     max_bars_back(source, 5000)
     if not barstate.islast or length <= 1
@@ -64,17 +37,6 @@ calcSlope(source, length) =>
         average = sumY / length
         intercept = average - slope * sumX / length + slope
         [slope, average, intercept]
-
-[s, a, i] = calcSlope(sourceInput, lengthInput)
-startPrice = i + s * (lengthInput - 1)
-endPrice = i
-var line baseLine = na
-if na(baseLine) and not na(startPrice)
-    baseLine := line.new(bar_index - lengthInput + 1, startPrice, bar_index, endPrice, width=1, extend=extendStyle, color=color.new(colorLower, 0))
-else
-    line.set_xy1(baseLine, bar_index - lengthInput + 1, startPrice)
-    line.set_xy2(baseLine, bar_index, endPrice)
-    na
 
 calcDev(source, length, slope, average, intercept) =>
     upDev = 0.0
@@ -106,30 +68,66 @@ calcDev(source, length, slope, average, intercept) =>
     pearsonR = dsxx == 0 or dsyy == 0 ? 0 : dsxy / math.sqrt(dsxx * dsyy)
     [stdDev, pearsonR, upDev, dnDev]
 
-[stdDev, pearsonR, upDev, dnDev] = calcDev(sourceInput, lengthInput, s, a, i)
-upperStartPrice = startPrice + (useUpperDevInput ? upperMultInput * stdDev : upDev)
-upperEndPrice = endPrice + (useUpperDevInput ? upperMultInput * stdDev : upDev)
-var line upper = na
-lowerStartPrice = startPrice + (useLowerDevInput ? -lowerMultInput * stdDev : -dnDev)
-lowerEndPrice = endPrice + (useLowerDevInput ? -lowerMultInput * stdDev : -dnDev)
-var line lower = na
-if na(upper) and not na(upperStartPrice)
-    upper := line.new(bar_index - lengthInput + 1, upperStartPrice, bar_index, upperEndPrice, width=1, extend=extendStyle, color=color.new(colorUpper, 0))
-else
-    line.set_xy1(upper, bar_index - lengthInput + 1, upperStartPrice)
-    line.set_xy2(upper, bar_index, upperEndPrice)
-    na
-if na(lower) and not na(lowerStartPrice)
-    lower := line.new(bar_index - lengthInput + 1, lowerStartPrice, bar_index, lowerEndPrice, width=1, extend=extendStyle, color=color.new(colorUpper, 0))
-else
-    line.set_xy1(lower, bar_index - lengthInput + 1, lowerStartPrice)
-    line.set_xy2(lower, bar_index, lowerEndPrice)
-    na
-linefill.new(upper, baseLine, color = colorUpper)
-linefill.new(baseLine, lower, color = colorLower)
+if showChanel
+    lengthInput = 100 //input.int(100, title="Length", minval = 1, maxval = 5000)
+    sourceInput = close //input.source(close, title="Source")
 
-// Pearson's R
-var label r = na
-label.delete(r[1])
-if showPearsonInput and not na(pearsonR)
-    r := label.new(bar_index - lengthInput + 1, lowerStartPrice, str.tostring(pearsonR, "#.################"), color = color.new(color.white, 100), textcolor=color.new(colorUpper, 0), size=size.normal, style=label.style_label_up)
+    group1 = "Channel Settings"
+    useUpperDevInput = true //input.bool(true, title="Upper Deviation", inline = "Upper Deviation", group = group1)
+    upperMultInput = 2.0 //input.float(2.0, title="", inline = "Upper Deviation", group = group1)
+    useLowerDevInput = true //input.bool(true, title="Lower Deviation", inline = "Lower Deviation", group = group1)
+    lowerMultInput = 2.0 //input.float(2.0, title="", inline = "Lower Deviation", group = group1)
+
+    group2 = "Display Settings"
+    showPearsonInput = true //input.bool(true, "Show Pearson's R", group = group2)
+    extendLeftInput = false //input.bool(false, "Extend Lines Left", group = group2)
+    extendRightInput = true //input.bool(true, "Extend Lines Right", group = group2)
+    extendStyle = switch
+        extendLeftInput and extendRightInput => extend.both
+        extendLeftInput => extend.left
+        extendRightInput => extend.right
+        => extend.none
+
+    group3 = "Color Settings"
+    colorUpper = color.new(color.blue, 85) //input.color(color.new(color.blue, 85), "", inline = group3, group = group3)
+    colorLower = color.new(color.red, 85) //input.color(color.new(color.red, 85), "", inline = group3, group = group3)
+
+    [s, a, i] = calcSlope(sourceInput, lengthInput)
+    startPrice = i + s * (lengthInput - 1)
+    endPrice = i
+    var line baseLine = na
+    if na(baseLine) and not na(startPrice)
+        baseLine := line.new(bar_index - lengthInput + 1, startPrice, bar_index, endPrice, width=1, extend=extendStyle, color=color.new(colorLower, 0))
+    else
+        line.set_xy1(baseLine, bar_index - lengthInput + 1, startPrice)
+        line.set_xy2(baseLine, bar_index, endPrice)
+        na
+
+    [stdDev, pearsonR, upDev, dnDev] = calcDev(sourceInput, lengthInput, s, a, i)
+    upperStartPrice = startPrice + (useUpperDevInput ? upperMultInput * stdDev : upDev)
+    upperEndPrice = endPrice + (useUpperDevInput ? upperMultInput * stdDev : upDev)
+    var line upper = na
+    lowerStartPrice = startPrice + (useLowerDevInput ? -lowerMultInput * stdDev : -dnDev)
+    lowerEndPrice = endPrice + (useLowerDevInput ? -lowerMultInput * stdDev : -dnDev)
+    var line lower = na
+    if na(upper) and not na(upperStartPrice)
+        upper := line.new(bar_index - lengthInput + 1, upperStartPrice, bar_index, upperEndPrice, width=1, extend=extendStyle, color=color.new(colorUpper, 0))
+    else
+        line.set_xy1(upper, bar_index - lengthInput + 1, upperStartPrice)
+        line.set_xy2(upper, bar_index, upperEndPrice)
+        na
+    if na(lower) and not na(lowerStartPrice)
+        lower := line.new(bar_index - lengthInput + 1, lowerStartPrice, bar_index, lowerEndPrice, width=1, extend=extendStyle, color=color.new(colorUpper, 0))
+    else
+        line.set_xy1(lower, bar_index - lengthInput + 1, lowerStartPrice)
+        line.set_xy2(lower, bar_index, lowerEndPrice)
+        na
+
+    linefill.new(upper, baseLine, color = colorUpper)
+    linefill.new(baseLine, lower, color = colorLower)
+
+    // Pearson's R
+    var label r = na
+    label.delete(r[1])
+    if showPearsonInput and not na(pearsonR)
+        r := label.new(bar_index - lengthInput + 1, lowerStartPrice, str.tostring(pearsonR, "#.################"), color = color.new(color.white, 100), textcolor=color.new(colorUpper, 0), size=size.normal, style=label.style_label_up)
